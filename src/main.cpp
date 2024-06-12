@@ -16,7 +16,8 @@ int main(int argc, char **argv)
     }
     else
     {
-        std::cerr << "Usage: " << argv[0] << " [path] [name]\n";
+        std::cerr << "Error: Invalid number of arguments\n";
+        std::cout << "Usage: " << argv[0] << " [path] [name]\n";
         return 1;
     }
 
