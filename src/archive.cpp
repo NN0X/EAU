@@ -22,7 +22,7 @@ void Archive::generateMetadata()
 {
     mMetadata.clear();
 
-    // <--continue here
+    // <--continue here (gen offsets + sizes)
 }
 
 bool Archive::loadMetadata()
@@ -36,14 +36,14 @@ bool Archive::loadMetadata()
     }
 
     int sizeOfMetadataBytes;
-    file.read(reinterpret_cast<char *>(&sizeOfMetadataBytes), sizeof(int));
+    file.read((char *)(&sizeOfMetadataBytes), sizeof(int));
 
-    std::vector<unsigned char> metadata(sizeOfMetadataBytes);
-    file.read(reinterpret_cast<char *>(&metadata[0]), sizeOfMetadataBytes);
+    std::vector<char> metadata(sizeOfMetadataBytes);
+    file.read(&metadata[0], sizeOfMetadataBytes);
 
     for (int i = 0; i < sizeOfMetadataBytes;)
     {
-        int sizeOfFilenameBytes = *reinterpret_cast<int *>(&metadata[i]);
+        int sizeOfFilenameBytes = metadata[i]; // <--temp
         i += sizeof(int);
 
         std::string filename(sizeOfFilenameBytes, '\0');
@@ -52,10 +52,10 @@ bool Archive::loadMetadata()
             filename[j] = metadata[i++];
         }
 
-        int sizeOfFileBytes = *reinterpret_cast<int *>(&metadata[i]);
+        int sizeOfFileBytes = metadata[i]; // <--temp
         i += sizeof(int);
 
-        int offset = *reinterpret_cast<int *>(&metadata[i]);
+        int offset = metadata[i]; // <--temp
         i += sizeof(int);
 
         mMetadata.mFiles.push_back(filename);
@@ -78,15 +78,15 @@ void Archive::save()
         return;
     }
 
-    file.write(reinterpret_cast<char *>(&mMetadata.mSizeBytes), sizeof(int));
-    file.write(reinterpret_cast<char *>(&mMetadata.mData[0]), mMetadata.mSizeBytes);
+    file.write((char *)(&mMetadata.mSizeBytes), sizeof(int));
+    file.write(&mMetadata.mData[0], mMetadata.mSizeBytes);
 
-    for (std::string &filename : mMetadata.mFiles)
-    {
-        Archive::loadFile(filename);
-        // <--continue here
-        Archive::unloadFile(filename);
-    }
+    // for (std::string &filename : mMetadata.mFiles)
+    // {
+    //     Archive::loadFile(filename);
+    //     <--continue here
+    //     Archive::unloadFile(filename);
+    // }
 
     std::cout << "Archive '" << mName << "' saved\n";
     file.close();

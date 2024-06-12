@@ -28,7 +28,7 @@ bool File::load()
     file.seekg(0, std::ios::end);
 
     mData.resize(file.tellg());
-    file.read(reinterpret_cast<char *>(&mData[0]), mData.size());
+    file.read(&mData[0], mData.size());
     file.close();
 
     return true;
@@ -44,7 +44,7 @@ bool File::save()
         return false;
     }
 
-    file.write(reinterpret_cast<char *>(&mData[0]), mData.size());
+    file.write(&mData[0], mData.size());
     file.close();
 
     return true;
@@ -59,14 +59,14 @@ void File::print(bool hex)
     std::cout << "------------------------------------------\n";
     if (hex)
     {
-        for (unsigned char byte : mData)
+        for (char byte : mData)
         {
-            std::cout << std::hex << static_cast<int>(byte) << " ";
+            std::cout << std::hex << int(byte) << " ";
         }
     }
     else
     {
-        for (unsigned char byte : mData)
+        for (char byte : mData)
         {
             std::cout << byte;
         }

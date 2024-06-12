@@ -1,18 +1,4 @@
-﻿/*
-Copyright 2024 NoX
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
+﻿// Copyright 2024 NoX
 
 #ifndef ARCHIVE_H
 #define ARCHIVE_H
@@ -29,7 +15,7 @@ struct File
 {
     std::string mName;
     std::string mExtension;
-    std::vector<unsigned char> mData;
+    std::vector<char> mData;
     int mSizeBits;
 
     File(const std::string &name, const std::string &extension);
@@ -47,12 +33,18 @@ struct Metadata
     std::unordered_map<std::string, int> mSizes;
     std::unordered_map<std::string, int> mOffsets;
 
-    std::vector<unsigned char> mData;
+    std::vector<char> mData;
 
     void generate();
     void clear();
 };
 
+/*---ARCHIVE STRUCTURE---
+n bytes: metadata
+for each file:
+    n bytes: file data
+--------------------------
+*/
 class Archive
 {
 private:
@@ -73,7 +65,7 @@ public:
         4 bytes: size of filename in bytes
         n bytes: filename
         4 bytes: size of file in bytes
-        4 bytes: index of first byte of the file in archive (offset)
+        4 bytes: index of first byte of the file in archive (offset from the end of metadata)
     --------------------------*/
     void generateMetadata();
     bool loadMetadata();
