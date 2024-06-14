@@ -18,52 +18,8 @@ Archive::~Archive()
     std::cout << "Archive '" << mName << "' unloaded\n";
 }
 
-void Archive::generateMetadata()
+void Archive::loadMetadata()
 {
-    mMetadata.clear();
-
-    // <--continue here (gen offsets + sizes)
-}
-
-bool Archive::loadMetadata()
-{
-    std::string filename = mPath + mName + ARCHIVE_EXTENSION;
-    std::ifstream file(filename, std::ios::binary);
-    if (!file.is_open())
-    {
-        std::cerr << "Error: Could not open file " << filename << "\n";
-        return false;
-    }
-
-    int sizeOfMetadataBytes;
-    file.read((char *)(&sizeOfMetadataBytes), sizeof(int));
-
-    std::vector<char> metadata(sizeOfMetadataBytes);
-    file.read(&metadata[0], sizeOfMetadataBytes);
-
-    for (int i = 0; i < sizeOfMetadataBytes;)
-    {
-        int sizeOfFilenameBytes = metadata[i]; // <--temp
-        i += sizeof(int);
-
-        std::string filename(sizeOfFilenameBytes, '\0');
-        for (int j = 0; j < sizeOfFilenameBytes; ++j)
-        {
-            filename[j] = metadata[i++];
-        }
-
-        int sizeOfFileBytes = metadata[i]; // <--temp
-        i += sizeof(int);
-
-        int offset = metadata[i]; // <--temp
-        i += sizeof(int);
-
-        mMetadata.mFiles.push_back(filename);
-        mMetadata.mSizes[filename] = sizeOfFileBytes;
-        mMetadata.mOffsets[filename] = offset;
-    }
-
-    return true;
 }
 
 void Archive::save()
@@ -90,4 +46,23 @@ void Archive::save()
 
     std::cout << "Archive '" << mName << "' saved\n";
     file.close();
+}
+
+void Archive::printFile(const std::string &filename, bool hex)
+{
+    if (mLoadedFiles.find(filename) == mLoadedFiles.end())
+    {
+        Archive::loadFile(filename);
+    }
+
+    File *file = mLoadedFiles[filename];
+
+    std::cout << "File: " << file->mName << "." << file->mExtension << "\n";
+    std::cout << "Size: " << file->mSizeBits << " bits\n";
+
+    std::cout << "Data:\n";
+    std::cout << "------------------------------------------\n";
+    file->print(hex);
+    std::cout << "\n";
+    std::cout << "------------------------------------------\n";
 }

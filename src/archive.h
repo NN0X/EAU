@@ -18,10 +18,9 @@ struct File
     std::vector<char> mData;
     int mSizeBits;
 
-    File(const std::string &name, const std::string &extension);
+    File(const std::string &name, const std::string &extension, const std::vector<char> &data);
 
-    bool load();
-    bool save();
+    bool save(int offset);
 
     void print(bool hex = false);
 };
@@ -29,14 +28,14 @@ struct File
 struct Metadata
 {
     int mSizeBytes;
-    std::vector<std::string> mFiles;
-    std::unordered_map<std::string, int> mSizes;
     std::unordered_map<std::string, int> mOffsets;
 
     std::vector<char> mData;
 
-    void generate();
-    void clear();
+    Metadata();
+
+    void addFile(const std::string &filename, int size);
+    void removeFile(const std::string &filename);
 };
 
 /*---ARCHIVE STRUCTURE---
@@ -49,6 +48,8 @@ class Archive
 {
 private:
     std::string mPath;
+    std::vector<std::string> mFiles;
+    std::unordered_map<std::string, int> mSizes;
     Metadata mMetadata;
     std::unordered_map<std::string, File *> mLoadedFiles;
 
@@ -68,20 +69,22 @@ public:
         4 bytes: index of first byte of the file in archive (offset from the end of metadata)
     --------------------------*/
     void generateMetadata();
-    bool loadMetadata();
+    void loadMetadata();
 
     void save();
 
-    bool loadFile(const std::string &filename);
+    void loadFile(const std::string &filename);
     void unloadFile(const std::string &filename);
 
     void addFile(const std::string &filename);
     void removeFile(const std::string &filename);
 
     void extractFile(const std::string &filename);
-    void extractAllFiles();
+    void extractAll();
 
     void listFiles();
+
+    void printFile(const std::string &filename, bool hex = false);
 };
 
 #endif
