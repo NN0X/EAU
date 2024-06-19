@@ -6,21 +6,19 @@ File::File(const std::string &name, const std::string &extension, const std::vec
     mSizeBits = mData.size() * 8;
 }
 
-bool File::save(int offset)
+void File::save(int offset)
 {
     std::string filename = mName + "." + mExtension;
     std::ofstream file(filename, std::ios::binary);
     if (!file.is_open())
     {
         std::cerr << "Error: Could not open file " << filename << "\n";
-        return false;
+        return;
     }
 
     file.seekp(offset);
     file.write(&mData[0], mData.size());
     file.close();
-
-    return true;
 }
 
 void File::print(bool hex)
