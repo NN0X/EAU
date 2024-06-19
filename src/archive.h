@@ -23,10 +23,7 @@ std::vector<char> convertToBytes(T value)
     return bytes;
 }
 
-void appendBytes(std::vector<char> &data, std::vector<char> bytes)
-{
-    data.insert(data.end(), bytes.begin(), bytes.end());
-}
+void appendBytes(std::vector<char> &data, std::vector<char> bytes);
 
 struct File
 {
@@ -62,7 +59,7 @@ struct Metadata
     Metadata(std::vector<char> data);
 
     void addFile(const std::string &filename, int size);
-    void removeFile(const std::string &filename);
+    // void removeFile(const std::string &filename);
 };
 
 /*---ARCHIVE STRUCTURE---
@@ -87,18 +84,17 @@ public:
     Archive(const std::string &path, const std::string &archiveName);
     ~Archive();
 
-    void generateMetadata();
     void loadMetadata();
 
     void save();
 
-    void loadFile(const std::string &filename);
-    void unloadFile(const std::string &filename);
+    void loadFile(const std::string &name, const std::string &extension);
+    void unloadFile(const std::string &name, const std::string &extension);
 
-    void addFile(const std::string &filename);
-    void removeFile(const std::string &filename);
+    void addFile(const std::string &name, const std::string &extension);
+    void removeFile(const std::string &name, const std::string &extension);
 
-    void extractFile(const std::string &filename);
+    void extractFile(const std::string &name, const std::string &extension);
     void extractAll();
 
     void listFiles();

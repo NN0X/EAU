@@ -19,7 +19,6 @@ Metadata::Metadata(std::vector<char> data)
 
     int filenameSize;
     std::string filename;
-    int fileSize;
     int offset;
     while (pos < mSizeBytes)
     {
@@ -31,7 +30,6 @@ Metadata::Metadata(std::vector<char> data)
         filename = std::string(mData.begin() + pos, mData.begin() + pos + filenameSize);
         pos += filenameSize;
 
-        fileSize = mData[pos] | (mData[pos + 1] << 8) | (mData[pos + 2] << 16) | (mData[pos + 3] << 24);
         pos += 4;
 
         offset = mData[pos] | (mData[pos + 1] << 8) | (mData[pos + 2] << 16) | (mData[pos + 3] << 24);
@@ -60,6 +58,6 @@ void Metadata::addFile(const std::string &filename, int size)
     mLastFilename = filename;
 }
 
-void Metadata::removeFile(const std::string &filename)
-{
-}
+// void Metadata::removeFile(const std::string &filename)
+// {
+// }

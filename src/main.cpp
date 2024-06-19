@@ -5,6 +5,21 @@
 #define LICENSE "See NOTICE.md file for license information"
 #define AUTHOR "NoX"
 
+void helpArchive()
+{
+    std::cout << "Commands:\n";
+    std::cout << "\tadd [filename]\n";
+    std::cout << "\tremove [filename]\n";
+    std::cout << "\tlist\n";
+    std::cout << "\tload [filename]\n";
+    std::cout << "\tprint [filename]\n";
+    std::cout << "\tprint hex [filename]\n";
+    std::cout << "\textract [filename]\n";
+    std::cout << "\textractall\n";
+    std::cout << "\tsave\n";
+    std::cout << "\texit\n";
+}
+
 void help()
 {
     std::cout << "Usage: " << NAME << " [path] [name]\n";
@@ -19,7 +34,7 @@ void help()
     std::cout << " --author\n";
 }
 
-void commands(std::string command)
+void infoCommands(std::string command)
 {
     if (command == "--help")
     {
@@ -63,7 +78,7 @@ int main(int argc, char **argv)
     }
     else if (argc == 2)
     {
-        commands(std::string(argv[1]));
+        infoCommands(std::string(argv[1]));
         path = "./";
         name = argv[1];
     }
@@ -76,4 +91,79 @@ int main(int argc, char **argv)
     }
 
     Archive archive(path, name);
+    std::string command;
+    std::cout << "Enter a command (type 'help' for a list of commands):\n";
+    while (true)
+    {
+        std::cout << "> ";
+        std::cin >> command;
+        if (command == "help")
+        {
+            helpArchive();
+        }
+        else if (command == "add")
+        {
+            std::string filename;
+            std::cin >> filename;
+            std::string name = filename.substr(0, filename.find_last_of('.'));
+            std::string extension = filename.substr(filename.find_last_of('.') + 1);
+            archive.addFile(name, extension);
+        }
+        else if (command == "remove")
+        {
+            std::string filename;
+            std::cin >> filename;
+            std::string name = filename.substr(0, filename.find_last_of('.'));
+            std::string extension = filename.substr(filename.find_last_of('.') + 1);
+            archive.removeFile(name, extension);
+        }
+        else if (command == "list")
+        {
+            archive.listFiles();
+        }
+        else if (command == "load")
+        {
+            std::string filename;
+            std::cin >> filename;
+            std::string name = filename.substr(0, filename.find_last_of('.'));
+            std::string extension = filename.substr(filename.find_last_of('.') + 1);
+            archive.loadFile(name, extension);
+        }
+        else if (command == "print")
+        {
+            std::string filename;
+            std::cin >> filename;
+            archive.printFile(filename);
+        }
+        else if (command == "print hex")
+        {
+            std::string filename;
+            std::cin >> filename;
+            archive.printFile(filename, true);
+        }
+        else if (command == "extract")
+        {
+            std::string filename;
+            std::cin >> filename;
+            std::string name = filename.substr(0, filename.find_last_of('.'));
+            std::string extension = filename.substr(filename.find_last_of('.') + 1);
+            archive.extractFile(name, extension);
+        }
+        else if (command == "extractall")
+        {
+            archive.extractAll();
+        }
+        else if (command == "save")
+        {
+            archive.save();
+        }
+        else if (command == "exit")
+        {
+            break;
+        }
+        else
+        {
+            std::cerr << "Error: Invalid command\n";
+        }
+    }
 }
