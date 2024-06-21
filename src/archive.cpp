@@ -1,8 +1,51 @@
 ﻿#include "archive.h"
 
-void appendBytes(std::vector<char> &data, std::vector<char> bytes)
+std::vector<char> Byte::intToBytes(int value)
 {
-    data.insert(data.end(), bytes.begin(), bytes.end());
+    int size = sizeof(int);
+    std::vector<char> bytes(size);
+
+    for (size_t i = 0; i < size; i++)
+    {
+        bytes[i] = (value >> (i * 8));
+    }
+
+    bytes = std::vector<char>(bytes.rbegin(), bytes.rend());
+
+    return bytes;
+}
+
+std::vector<int> Byte::bytesToInts(const std::vector<char> &bytes)
+{
+    std::vector<int> values;
+    for (size_t i = 0; i < bytes.size(); i += sizeof(int))
+    {
+        int value = 0;
+        value = ((value | bytes[0]) << 8 | bytes[1]) << 8 | bytes[2] << 8 | (bytes[3] & 0xFF);
+        values.push_back(value);
+    }
+
+    return values;
+}
+
+std::vector<bool> Byte::bytesToBits(const std::vector<char> &bytes)
+{
+    std::vector<bool> bits;
+    for (size_t i = 0; i < bytes.size(); i++)
+    {
+        char byte = bytes[i];
+        std::vector<bool> bitsOfByte(8);
+        for (size_t j = 0; j < 8; j++)
+        {
+            bool bit = (byte >> j) & 1;
+            bitsOfByte[j] = bit;
+        }
+
+        bitsOfByte = std::vector<bool>(bitsOfByte.rbegin(), bitsOfByte.rend());
+        bits.insert(bits.end(), bitsOfByte.begin(), bitsOfByte.end());
+    }
+
+    return bits;
 }
 
 Archive::Archive(const std::string &path, const std::string &archiveName)
@@ -23,31 +66,6 @@ Archive::~Archive()
     mLoadedFiles.clear();
 
     std::cout << "Archive '" << mName << "' unloaded\n";
-}
-
-void Archive::loadMetadata()
-{
-    std::string filename = mPath + mName + ARCHIVE_EXTENSION;
-    std::ifstream file(filename, std::ios::binary);
-    if (!file.is_open())
-    {
-        mMetadata = Metadata();
-        return;
-    }
-    if (file.peek() == std::ifstream::traits_type::eof())
-    {
-        file.close();
-        return;
-    }
-
-    int size;
-    file.read((char *)(&size), sizeof(int));
-    std::vector<char> data(size);
-    file.read(&data[0], size);
-
-    mMetadata = Metadata(data);
-
-    file.close();
 }
 
 void Archive::save()

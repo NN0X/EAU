@@ -1,63 +1,131 @@
 ﻿#include "archive.h"
 
 Metadata::Metadata()
-    : mSizeBytes(4), mLastFilename("")
+    : mSizeBytes(4)
 {
-    mData.resize(mSizeBytes);
-    appendBytes(mData, convertToBytes<int>(mSizeBytes));
+    mData = Byte::intToBytes(mSizeBytes);
 }
 
-Metadata::Metadata(std::vector<char> data)
-    : mData(data)
+void Metadata::load(const std::string &path)
 {
-    mSizeBytes = mData.size();
-    mData.resize(mSizeBytes);
-    appendBytes(mData, convertToBytes<int>(mSizeBytes));
-
-    int pos = 4;
-    mSizeBytes = mData.size();
-
-    int filenameSize;
-    std::string filename;
-    int offset;
-    while (pos < mSizeBytes)
+    std::ifstream file(path, std::ios::binary);
+    if (!file.is_open())
     {
-        mMetadataOffsets[mLastFilename] = pos;
+        std::cerr << "Error: Could not open file " << path << "\n";
+        return;
+    }
 
-        filenameSize = mData[pos] | (mData[pos + 1] << 8) | (mData[pos + 2] << 16) | (mData[pos + 3] << 24);
-        pos += 4;
+    file.seekg(0);
+    file.read((char *)(&mSizeBytes), sizeof(int));
+    mData = std::vector<char>(mSizeBytes);
+    file.seekg(0);
+    file.read(&mData[0], mSizeBytes);
 
-        filename = std::string(mData.begin() + pos, mData.begin() + pos + filenameSize);
-        pos += filenameSize;
+    file.close();
 
-        pos += 4;
+    serialize();
+}
 
-        offset = mData[pos] | (mData[pos + 1] << 8) | (mData[pos + 2] << 16) | (mData[pos + 3] << 24);
-        pos += 4;
+// test
+void Metadata::serialize()
+{
+    mFilenames.clear();
+    mSizes.clear();
+    mOffsets.clear();
+    mMetadataOffsets.clear();
+
+    int index = 4;
+    while (index < mSizeBytes)
+    {
+        int filenameSize = Byte::bytesToInts(std::vector<char>(mData.begin() + index, mData.begin() + index + 4))[0];
+        std::string filename(mData.begin() + index + 4, mData.begin() + index + 4 + filenameSize);
+        mFilenames.push_back(filename);
+
+        int size = Byte::bytesToInts(std::vector<char>(mData.begin() + index + 4 + filenameSize, mData.begin() + index + 8 + filenameSize))[0];
+        mSizes[filename] = size;
+
+        int offset = Byte::bytesToInts(std::vector<char>(mData.begin() + index + 8 + filenameSize, mData.begin() + index + 12 + filenameSize))[0];
         mOffsets[filename] = offset;
 
-        mLastFilename = filename;
+        mMetadataOffsets[filename] = index;
+
+        index += 12 + filenameSize;
+    }
+
+    if (index != mSizeBytes)
+    {
+        std::cerr << "Error: Metadata size mismatch\n";
     }
 }
 
+// test
 void Metadata::addFile(const std::string &filename, int size)
 {
-    mMetadataOffsets[mLastFilename] = mSizeBytes;
-    if (mOffsets.empty())
-        mOffsets[filename] = 0;
-    else
-        mOffsets[filename] = mOffsets[mLastFilename] + size;
-    mSizeBytes += 4 + filename.size() + 4 + 4;
-    mData.resize(mSizeBytes);
+    mFilenames.push_back(filename);
+    mSizes[filename] = size;
+    mOffsets[filename] = mOffsets[mFilenames.back()] + mSizes[mFilenames.back()];
+    mMetadataOffsets[filename] = mSizeBytes;
 
-    appendBytes(mData, convertToBytes<int>(filename.size()));                // size of filename
-    appendBytes(mData, std::vector<char>(filename.begin(), filename.end())); // filename
-    appendBytes(mData, convertToBytes<int>(size));                           // size of file
-    appendBytes(mData, convertToBytes<int>(mOffsets[filename]));             // offset of file
+    std::vector<char> filenameBytes = Byte::intToBytes(filename.size());
+    filenameBytes.insert(filenameBytes.end(), filename.begin(), filename.end());
+    std::vector<char> sizeBytes = Byte::intToBytes(size);
+    std::vector<char> offsetBytes = Byte::intToBytes(mOffsets[filename]);
 
-    mLastFilename = filename;
+    Vector::append(mData, filenameBytes);
+    Vector::append(mData, sizeBytes);
+    Vector::append(mData, offsetBytes);
+
+    mSizeBytes += 12 + filename.size();
+
+    Vector::replace(mData, Byte::intToBytes(mSizeBytes), 0);
 }
 
-// void Metadata::removeFile(const std::string &filename)
-// {
-// }
+// test
+void Metadata::removeFile(const std::string &filename)
+{
+    if (mMetadataOffsets.find(filename) == mMetadataOffsets.end())
+    {
+        std::cerr << "Error: File " << filename << " is not in the metadata\n";
+        return;
+    }
+
+    int index = mMetadataOffsets[filename];
+    mFilenames.erase(std::find(mFilenames.begin(), mFilenames.end(), filename));
+    mSizes.erase(filename);
+    mOffsets.erase(filename);
+    mMetadataOffsets.erase(filename);
+
+    int filenameSize = Byte::bytesToInts(std::vector<char>(mData.begin() + index, mData.begin() + index + 4))[0];
+    int size = Byte::bytesToInts(std::vector<char>(mData.begin() + index + 4 + filenameSize, mData.begin() + index + 8 + filenameSize))[0];
+
+    mData.erase(mData.begin() + index, mData.begin() + index + 12 + filenameSize);
+    mSizeBytes -= 12 + filenameSize;
+
+    Vector::replace(mData, Byte::intToBytes(mSizeBytes), 0);
+
+    for (auto &offset : mMetadataOffsets)
+    {
+        if (offset.second > index)
+        {
+            offset.second -= 12 + filenameSize;
+        }
+    }
+
+    for (auto &offset : mOffsets)
+    {
+        if (offset.second > mOffsets[filename])
+        {
+            offset.second -= size;
+        }
+    }
+}
+
+int Metadata::getFileSize(const std::string &filename)
+{
+    return mSizes[filename];
+}
+
+int Metadata::getFileOffset(const std::string &filename)
+{
+    return mOffsets[filename];
+}
