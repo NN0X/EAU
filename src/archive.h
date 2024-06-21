@@ -97,11 +97,11 @@ for each file:
 class Archive
 {
 private:
-    std::string mPath;
     Metadata mMetadata;
     std::unordered_map<std::string, File *> mLoadedFiles;
 
 public:
+    std::string mPath;
     std::string mName;
     int mSizeBytes;
 
@@ -111,7 +111,7 @@ public:
     void load();
     void save();
 
-    void partitionFile(const std::string &filename);
+    // void partitionFile(const std::string &filename);
 
     void loadFile(const std::string &filename);
     void unloadFile(const std::string &filename);

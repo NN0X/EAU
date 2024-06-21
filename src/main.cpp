@@ -11,10 +11,11 @@ void helpArchive()
     std::cout << "\tadd [filename]\n";
     std::cout << "\tremove [filename]\n";
     std::cout << "\tlist\n";
-    std::cout << "\tload [filename]\n";
+    std::cout << "\tadd [filename]\n";
+    std::cout << "\tremove [filename]\n";
     std::cout << "\tprint [filename]\n";
-    std::cout << "\tprint hex [filename]\n";
-    std::cout << "\tprint bits [filename]\n";
+    std::cout << "\thex [filename]\n";
+    std::cout << "\tbits [filename]\n";
     std::cout << "\textract [filename]\n";
     std::cout << "\textractall\n";
     std::cout << "\tsave\n";
@@ -91,7 +92,12 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    Archive archive(path, name);
+    // check if archive exists
+    std::ifstream file(path + name, std::ios::binary);
+    bool exists = file.good();
+    file.close();
+
+    Archive archive(path, name, exists);
     std::string command;
     std::cout << "Enter a command (type 'help' for a list of commands):\n";
     while (true)
@@ -118,11 +124,17 @@ int main(int argc, char **argv)
         {
             archive.listFiles();
         }
-        else if (command == "load")
+        else if (command == "add")
         {
             std::string filename;
             std::cin >> filename;
-            archive.loadFile(filename);
+            archive.addFile(filename);
+        }
+        else if (command == "remove")
+        {
+            std::string filename;
+            std::cin >> filename;
+            archive.removeFile(filename);
         }
         else if (command == "print")
         {
@@ -130,13 +142,13 @@ int main(int argc, char **argv)
             std::cin >> filename;
             archive.printFile(filename);
         }
-        else if (command == "print hex")
+        else if (command == "hex")
         {
             std::string filename;
             std::cin >> filename;
             archive.printFile(filename, HEX);
         }
-        else if (command == "print bits")
+        else if (command == "bits")
         {
             std::string filename;
             std::cin >> filename;

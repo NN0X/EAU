@@ -28,20 +28,20 @@ void File::print(int mode)
     switch (mode)
     {
     case ASCII:
-        for (int i = 0; i < mData.size(); i++)
+        for (size_t i = 0; i < mData.size(); i++)
         {
             std::cout << mData[i];
         }
         break;
     case HEX:
-        for (int i = 0; i < mData.size(); i++)
+        for (size_t i = 0; i < mData.size(); i++)
         {
             std::cout << std::hex << (int)mData[i] << " ";
         }
         break;
     case BITS:
         bits = Byte::bytesToBits(mData);
-        for (int i = 0; i < mData.size(); i++)
+        for (size_t i = 0; i < mData.size(); i++)
         {
             std::cout << bits[i];
             if ((i + 1) % 8 == 0)

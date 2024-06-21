@@ -5,7 +5,7 @@ std::vector<char> Byte::intToBytes(int value)
     int size = sizeof(int);
     std::vector<char> bytes(size);
 
-    for (size_t i = 0; i < size; i++)
+    for (int i = 0; i < size; i++)
     {
         bytes[i] = (value >> (i * 8));
     }
@@ -49,7 +49,7 @@ std::vector<bool> Byte::bytesToBits(const std::vector<char> &bytes)
 }
 
 Archive::Archive(const std::string &path, const std::string &archiveName, bool exists)
-    : mMetadata(), mPath(path), mName(archiveName)
+    : mPath(path), mName(archiveName)
 {
     if (exists)
         load();
@@ -87,6 +87,10 @@ void Archive::save()
     file.close();
 }
 
+// void Archive::partitionFile(const std::string &filename)
+// {
+// }
+
 void Archive::loadFile(const std::string &filename)
 {
     if (mLoadedFiles.find(filename) != mLoadedFiles.end())
@@ -98,7 +102,7 @@ void Archive::loadFile(const std::string &filename)
     int size = mMetadata.getFileSize(filename);
     if (size > FILE_PARTITION_SIZE)
     {
-        partitionFile(filename);
+        // partitionFile(filename);
         return;
     }
 
