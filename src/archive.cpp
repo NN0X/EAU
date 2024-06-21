@@ -126,10 +126,30 @@ void Archive::unloadFile(const std::string &filename)
 
 void Archive::addFile(const std::string &filename)
 {
+    std::ifstream file(mPath + filename, std::ios::binary);
+    if (!file.is_open())
+    {
+        std::cerr << "Error: Could not open file " << filename << "\n";
+        return;
+    }
+
+    file.seekg(0, std::ios::end);
+    int size = file.tellg();
+    file.close();
+
+    mMetadata.addFile(filename, size);
+    save();
 }
 
 void Archive::removeFile(const std::string &filename)
 {
+    mMetadata.removeFile(filename);
+    save();
+
+    if (mLoadedFiles.find(filename) != mLoadedFiles.end())
+    {
+        unloadFile(filename);
+    }
 }
 
 void Archive::extractFile(const std::string &filename)
@@ -158,4 +178,10 @@ void Archive::listFiles()
 
 void Archive::printFile(const std::string &filename, int mode)
 {
+    if (mLoadedFiles.find(filename) == mLoadedFiles.end())
+    {
+        loadFile(filename);
+    }
+
+    mLoadedFiles[filename]->print(mode);
 }

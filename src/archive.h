@@ -11,7 +11,14 @@
 #include <algorithm>
 
 #define ARCHIVE_EXTENSION ".eau"
-#define FILE_PARTITION_SIZE 1'000'000'000 // 1 GB
+#define FILE_PARTITION_SIZE 1000000000 // 1 GB
+
+enum PrintMode
+{
+    ASCII,
+    HEX,
+    BITS
+};
 
 namespace Vector
 {

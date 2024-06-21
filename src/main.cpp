@@ -14,6 +14,7 @@ void helpArchive()
     std::cout << "\tload [filename]\n";
     std::cout << "\tprint [filename]\n";
     std::cout << "\tprint hex [filename]\n";
+    std::cout << "\tprint bits [filename]\n";
     std::cout << "\textract [filename]\n";
     std::cout << "\textractall\n";
     std::cout << "\tsave\n";
@@ -105,17 +106,13 @@ int main(int argc, char **argv)
         {
             std::string filename;
             std::cin >> filename;
-            std::string name = filename.substr(0, filename.find_last_of('.'));
-            std::string extension = filename.substr(filename.find_last_of('.') + 1);
-            archive.addFile(name, extension);
+            archive.addFile(filename);
         }
         else if (command == "remove")
         {
             std::string filename;
             std::cin >> filename;
-            std::string name = filename.substr(0, filename.find_last_of('.'));
-            std::string extension = filename.substr(filename.find_last_of('.') + 1);
-            archive.removeFile(name, extension);
+            archive.removeFile(filename);
         }
         else if (command == "list")
         {
@@ -125,9 +122,7 @@ int main(int argc, char **argv)
         {
             std::string filename;
             std::cin >> filename;
-            std::string name = filename.substr(0, filename.find_last_of('.'));
-            std::string extension = filename.substr(filename.find_last_of('.') + 1);
-            archive.loadFile(name, extension);
+            archive.loadFile(filename);
         }
         else if (command == "print")
         {
@@ -139,15 +134,19 @@ int main(int argc, char **argv)
         {
             std::string filename;
             std::cin >> filename;
-            archive.printFile(filename, true);
+            archive.printFile(filename, HEX);
+        }
+        else if (command == "print bits")
+        {
+            std::string filename;
+            std::cin >> filename;
+            archive.printFile(filename, BITS);
         }
         else if (command == "extract")
         {
             std::string filename;
             std::cin >> filename;
-            std::string name = filename.substr(0, filename.find_last_of('.'));
-            std::string extension = filename.substr(filename.find_last_of('.') + 1);
-            archive.extractFile(name, extension);
+            archive.extractFile(filename);
         }
         else if (command == "extractall")
         {

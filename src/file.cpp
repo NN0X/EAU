@@ -27,19 +27,19 @@ void File::print(int mode)
     std::cout << "--------------------------------\n";
     switch (mode)
     {
-    case 0:
+    case ASCII:
         for (int i = 0; i < mData.size(); i++)
         {
             std::cout << mData[i];
         }
         break;
-    case 1:
+    case HEX:
         for (int i = 0; i < mData.size(); i++)
         {
             std::cout << std::hex << (int)mData[i] << " ";
         }
         break;
-    case 2:
+    case BITS:
         bits = Byte::bytesToBits(mData);
         for (int i = 0; i < mData.size(); i++)
         {
