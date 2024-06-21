@@ -48,19 +48,18 @@ std::vector<bool> Byte::bytesToBits(const std::vector<char> &bytes)
     return bits;
 }
 
-Archive::Archive(const std::string &path, const std::string &archiveName)
+Archive::Archive(const std::string &path, const std::string &archiveName, bool exists)
+    : mMetadata(), mPath(path), mName(archiveName)
 {
-    mPath = path;
-    mName = archiveName;
-
-    loadMetadata();
+    if (exists)
+        load();
 }
 
 Archive::~Archive()
 {
     for (auto &file : mLoadedFiles)
     {
-        delete file.second;
+        unloadFile(file.first);
     }
 
     mLoadedFiles.clear();
@@ -68,162 +67,95 @@ Archive::~Archive()
     std::cout << "Archive '" << mName << "' unloaded\n";
 }
 
+void Archive::load()
+{
+    mMetadata.load(mPath + mName + ARCHIVE_EXTENSION);
+}
+
 void Archive::save()
 {
-    std::string filename = mPath + mName + ARCHIVE_EXTENSION;
-    std::ofstream file(filename, std::ios::binary);
-    if (!file.is_open())
-    {
-        std::cerr << "Error: Could not open file " << filename << "\n";
-        return;
-    }
-
-    file.write((char *)(&mMetadata.mSizeBytes), sizeof(int));
+    std::ofstream file(mPath + mName + ARCHIVE_EXTENSION, std::ios::binary);
     file.write(&mMetadata.mData[0], mMetadata.mSizeBytes);
-
-    for (std::string &filename : mFiles)
+    for (std::string filename : mMetadata.mFilenames)
     {
-        std::string name = filename.substr(0, filename.find_last_of('.'));
-        std::string extension = filename.substr(filename.find_last_of('.') + 1);
-        Archive::loadFile(name, extension);
-        file.write(mLoadedFiles[filename]->mData.data(), mLoadedFiles[filename]->mData.size());
-        Archive::unloadFile(name, extension);
+        loadFile(filename);
+        file.seekp(mMetadata.getFileOffset(filename));
+        file.write(mLoadedFiles[filename]->mData.data(), mLoadedFiles[filename]->mSizeBytes);
+        unloadFile(filename);
     }
 
-    std::cout << "Archive '" << mName << "' saved\n";
     file.close();
 }
 
-// change to work for big files
-void Archive::loadFile(const std::string &name, const std::string &extension)
+void Archive::loadFile(const std::string &filename)
 {
-    std::string filename = mPath + name + "." + extension;
-    std::ifstream file(filename, std::ios::binary);
-    if (!file.is_open())
+    if (mLoadedFiles.find(filename) != mLoadedFiles.end())
     {
-        std::cerr << "Error: Could not open file " << filename << "\n";
+        std::cerr << "Error: File '" << filename << "' already loaded\n";
         return;
     }
 
-    file.seekg(0, std::ios::end);
-    int size = file.tellg();
-    file.seekg(0, std::ios::beg);
+    int size = mMetadata.getFileSize(filename);
+    if (size > FILE_PARTITION_SIZE)
+    {
+        partitionFile(filename);
+        return;
+    }
 
+    int offset = mMetadata.getFileOffset(filename);
+    std::ifstream file(mPath + mName + ARCHIVE_EXTENSION, std::ios::binary);
+    file.seekg(offset);
     std::vector<char> data(size);
     file.read(&data[0], size);
-
-    File *fileObj = new File(name, extension, data);
-    mLoadedFiles[name] = fileObj;
-
-    file.close();
-}
-
-void Archive::unloadFile(const std::string &name, const std::string &extension)
-{
-    if (mLoadedFiles.find(name) == mLoadedFiles.end())
-    {
-        std::cerr << "Error: File " << name << "." << extension << " is not loaded\n";
-        return;
-    }
-
-    delete mLoadedFiles[name];
-    mLoadedFiles.erase(name);
-}
-
-void Archive::addFile(const std::string &name, const std::string &extension)
-{
-    std::ifstream file(mPath + name + "." + extension, std::ios::binary);
-    if (!file.is_open())
-    {
-        std::cerr << "Error: Could not open file " << name << "." << extension << "\n";
-        return;
-    }
-
-    file.seekg(0, std::ios::end);
-    int size = file.tellg();
     file.close();
 
-    mFiles.push_back(name);
-    mSizes[name] = size;
-    mMetadata.addFile(name + "." + extension, size);
+    mLoadedFiles[filename] = new File(filename, data);
 }
 
-void Archive::removeFile(const std::string &name, const std::string &extension)
+void Archive::unloadFile(const std::string &filename)
 {
-    if (mMetadata.mOffsets.find(name + "." + extension) == mMetadata.mOffsets.end())
+    if (mLoadedFiles.find(filename) == mLoadedFiles.end())
     {
-        std::cerr << "Error: File " << name << "." << extension << " is not in the archive\n";
+        std::cerr << "Error: File '" << filename << "' not loaded\n";
         return;
     }
 
-    // mMetadata.removeFile(name + "." + extension);
-    for (size_t i = 0; i < mFiles.size(); i++)
-    {
-        if (mFiles[i] == name)
-        {
-            mFiles.erase(mFiles.begin() + i);
-            break;
-        }
-    }
-    mSizes.erase(name);
-
-    std::string filename = mPath + name + "." + extension;
-    if (mLoadedFiles.find(name) != mLoadedFiles.end())
-    {
-        delete mLoadedFiles[name];
-        mLoadedFiles.erase(name);
-    }
+    delete mLoadedFiles[filename];
+    mLoadedFiles.erase(filename);
 }
 
-void Archive::extractFile(const std::string &name, const std::string &extension)
+void Archive::addFile(const std::string &filename)
 {
-    if (mMetadata.mOffsets.find(name + "." + extension) == mMetadata.mOffsets.end())
-    {
-        std::cerr << "Error: File " << name << "." << extension << " is not in the archive\n";
-        return;
-    }
+}
 
-    Archive::loadFile(name, extension);
-    mLoadedFiles[name]->save(mMetadata.mOffsets[name + "." + extension]);
-    Archive::unloadFile(name, extension);
+void Archive::removeFile(const std::string &filename)
+{
+}
+
+void Archive::extractFile(const std::string &filename)
+{
+    std::ofstream file(mPath + filename, std::ios::binary);
+    loadFile(filename);
+    file.write(mLoadedFiles[filename]->mData.data(), mLoadedFiles[filename]->mSizeBytes);
+    file.close();
 }
 
 void Archive::extractAll()
 {
-    for (std::string &filename : mFiles)
+    for (std::string filename : mMetadata.mFilenames)
     {
-        std::string name = filename.substr(0, filename.find_last_of('.'));
-        std::string extension = filename.substr(filename.find_last_of('.') + 1);
-        Archive::extractFile(name, extension);
+        extractFile(filename);
     }
 }
 
 void Archive::listFiles()
 {
-    std::cout << "Files in archive '" << mName << "':\n";
-    for (std::string &filename : mFiles)
+    for (std::string filename : mMetadata.mFilenames)
     {
         std::cout << filename << "\n";
     }
 }
 
-void Archive::printFile(const std::string &filename, bool hex)
+void Archive::printFile(const std::string &filename, int mode)
 {
-    if (mLoadedFiles.find(filename) == mLoadedFiles.end())
-    {
-        std::string name = filename.substr(0, filename.find_last_of('.'));
-        std::string extension = filename.substr(filename.find_last_of('.') + 1);
-        Archive::loadFile(filename, extension);
-    }
-
-    File *file = mLoadedFiles[filename];
-
-    std::cout << "File: " << file->mName << "." << file->mExtension << "\n";
-    std::cout << "Size: " << file->mSizeBits << " bits\n";
-
-    std::cout << "Data:\n";
-    std::cout << "------------------------------------------\n";
-    file->print(hex);
-    std::cout << "\n";
-    std::cout << "------------------------------------------\n";
 }

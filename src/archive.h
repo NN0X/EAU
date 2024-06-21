@@ -11,6 +11,7 @@
 #include <algorithm>
 
 #define ARCHIVE_EXTENSION ".eau"
+#define FILE_PARTITION_SIZE 1'000'000'000 // 1 GB
 
 namespace Vector
 {
@@ -59,12 +60,12 @@ struct File
 class Metadata
 {
 private:
-    std::vector<std::string> mFilenames;
     std::unordered_map<std::string, int> mSizes;
     std::unordered_map<std::string, int> mOffsets;
     std::unordered_map<std::string, int> mMetadataOffsets;
 
 public:
+    std::vector<std::string> mFilenames;
     int mSizeBytes;
     std::vector<char> mData;
 
@@ -97,11 +98,13 @@ public:
     std::string mName;
     int mSizeBytes;
 
-    Archive(const std::string &path, const std::string &archiveName);
+    Archive(const std::string &path, const std::string &archiveName, bool exists = false);
     ~Archive();
 
     void load();
     void save();
+
+    void partitionFile(const std::string &filename);
 
     void loadFile(const std::string &filename);
     void unloadFile(const std::string &filename);
@@ -114,7 +117,7 @@ public:
 
     void listFiles();
 
-    void printFile(const std::string &filename, bool hex = false);
+    void printFile(const std::string &filename, int mode = 0);
 };
 
 #endif
