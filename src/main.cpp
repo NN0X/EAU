@@ -11,13 +11,15 @@ void helpArchive()
     std::cout << "\tadd [filename]\n";
     std::cout << "\tremove [filename]\n";
     std::cout << "\tlist\n";
+    std::cout << "\tsize [filename]\n";
+    std::cout << "\tsize all\n";
     std::cout << "\tadd [filename]\n";
     std::cout << "\tremove [filename]\n";
     std::cout << "\tprint [filename]\n";
     std::cout << "\thex [filename]\n";
     std::cout << "\tbits [filename]\n";
     std::cout << "\textract [filename]\n";
-    std::cout << "\textractall\n";
+    std::cout << "\textract all\n";
     std::cout << "\tsave\n";
     std::cout << "\texit\n";
 }
@@ -54,7 +56,7 @@ void infoCommands(std::string command)
     }
     else if (command == "--version")
     {
-        std::cout << "Version: " << VERSION << "\n";
+        std::cout << "version: " << VERSION << "\n";
         exit(0);
     }
     else if (command == "--license")
@@ -64,7 +66,7 @@ void infoCommands(std::string command)
     }
     else if (command == "--author")
     {
-        std::cout << "Author: " << AUTHOR << "\n";
+        std::cout << "author: " << AUTHOR << "\n";
         exit(0);
     }
 }
@@ -92,8 +94,7 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    // check if archive exists
-    std::ifstream file(path + name, std::ios::binary);
+    std::ifstream file(path + name + ARCHIVE_EXTENSION, std::ios::binary);
     bool exists = file.good();
     file.close();
 
@@ -123,6 +124,15 @@ int main(int argc, char **argv)
         else if (command == "list")
         {
             archive.listFiles();
+        }
+        else if (command == "size")
+        {
+            std::string filename;
+            std::cin >> filename;
+            if (filename == "all")
+                std::cout << "Size: " << archive.mSizeBytes << " bytes\n";
+            else
+                std::cout << "Size: " << archive.mMetadata.getFileSize(filename) << " bytes\n";
         }
         else if (command == "add")
         {
@@ -158,18 +168,22 @@ int main(int argc, char **argv)
         {
             std::string filename;
             std::cin >> filename;
-            archive.extractFile(filename);
+            if (filename == "all")
+                archive.extractAll();
+            else
+                archive.extractFile(filename);
         }
-        else if (command == "extractall")
+        else if (command == "clear")
         {
-            archive.extractAll();
-        }
-        else if (command == "save")
-        {
-            archive.save();
+            std::cout << "\033[2J\033[1;1H";
         }
         else if (command == "exit")
         {
+            break;
+        }
+        else if (command == "erase")
+        {
+            std::remove((path + name + ARCHIVE_EXTENSION).c_str());
             break;
         }
         else

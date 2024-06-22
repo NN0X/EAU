@@ -49,10 +49,18 @@ std::vector<bool> Byte::bytesToBits(const std::vector<char> &bytes)
 }
 
 Archive::Archive(const std::string &path, const std::string &archiveName, bool exists)
-    : mPath(path), mName(archiveName)
+    : mData(), mMetadata(), mPath(path), mName(archiveName)
 {
     if (exists)
+    {
+        std::cout << "Archive '" << mName << "' loaded\n";
         load();
+    }
+    else
+    {
+        std::cout << "Archive '" << mName << "' created\n";
+        save();
+    }
 }
 
 Archive::~Archive()
@@ -78,21 +86,56 @@ void Archive::save()
     file.write(&mMetadata.mData[0], mMetadata.mSizeBytes);
     for (std::string filename : mMetadata.mFilenames)
     {
-        loadFile(filename);
-        file.seekp(mMetadata.getFileOffset(filename));
+        loadOutsideFile(filename);
+        file.seekp(mMetadata.getFileOffset(filename) + mMetadata.mSizeBytes);
         file.write(mLoadedFiles[filename]->mData.data(), mLoadedFiles[filename]->mSizeBytes);
         unloadFile(filename);
     }
 
     file.close();
+
+    mSizeBytes = mMetadata.mSizeBytes;
+    for (std::string filename : mMetadata.mFilenames)
+    {
+        mSizeBytes += mMetadata.getFileSize(filename);
+    }
 }
 
 // void Archive::partitionFile(const std::string &filename)
 // {
 // }
 
-void Archive::loadFile(const std::string &filename)
+void Archive::loadOutsideFile(const std::string &filename)
 {
+    if (mLoadedFiles.find(filename) != mLoadedFiles.end())
+    {
+        std::cerr << "File '" << filename << "' already loaded\n";
+        return;
+    }
+
+    int size = mMetadata.getFileSize(filename);
+    if (size > FILE_PARTITION_SIZE)
+    {
+        // partitionFile(filename);
+        return;
+    }
+
+    std::ifstream file(mPath + filename, std::ios::binary);
+    file.seekg(0);
+    std::vector<char> data(size);
+    file.read(&data[0], size);
+    file.close();
+
+    mLoadedFiles[filename] = new File(filename, data);
+}
+
+void Archive::loadArchiveFile(const std::string &filename)
+{
+    if (std::find(mMetadata.mFilenames.begin(), mMetadata.mFilenames.end(), filename) == mMetadata.mFilenames.end())
+    {
+        std::cerr << "Error: File '" << filename << "' not found\n";
+        return;
+    }
     if (mLoadedFiles.find(filename) != mLoadedFiles.end())
     {
         std::cerr << "Error: File '" << filename << "' already loaded\n";
@@ -106,9 +149,8 @@ void Archive::loadFile(const std::string &filename)
         return;
     }
 
-    int offset = mMetadata.getFileOffset(filename);
     std::ifstream file(mPath + mName + ARCHIVE_EXTENSION, std::ios::binary);
-    file.seekg(offset);
+    file.seekg(mMetadata.getFileOffset(filename) + mMetadata.mSizeBytes);
     std::vector<char> data(size);
     file.read(&data[0], size);
     file.close();
@@ -142,6 +184,7 @@ void Archive::addFile(const std::string &filename)
     file.close();
 
     mMetadata.addFile(filename, size);
+
     save();
 }
 
@@ -159,7 +202,7 @@ void Archive::removeFile(const std::string &filename)
 void Archive::extractFile(const std::string &filename)
 {
     std::ofstream file(mPath + filename, std::ios::binary);
-    loadFile(filename);
+    loadArchiveFile(filename);
     file.write(mLoadedFiles[filename]->mData.data(), mLoadedFiles[filename]->mSizeBytes);
     file.close();
 }
@@ -184,7 +227,7 @@ void Archive::printFile(const std::string &filename, int mode)
 {
     if (mLoadedFiles.find(filename) == mLoadedFiles.end())
     {
-        loadFile(filename);
+        loadOutsideFile(filename);
     }
 
     mLoadedFiles[filename]->print(mode);

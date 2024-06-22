@@ -79,6 +79,7 @@ public:
     Metadata();
 
     void load(const std::string &path);
+    void toData();
     void serialize();
 
     void addFile(const std::string &filename, int size);
@@ -97,10 +98,11 @@ for each file:
 class Archive
 {
 private:
-    Metadata mMetadata;
+    std::vector<char> mData;
     std::unordered_map<std::string, File *> mLoadedFiles;
 
 public:
+    Metadata mMetadata;
     std::string mPath;
     std::string mName;
     int mSizeBytes;
@@ -113,7 +115,8 @@ public:
 
     // void partitionFile(const std::string &filename);
 
-    void loadFile(const std::string &filename);
+    void loadOutsideFile(const std::string &filename);
+    void loadArchiveFile(const std::string &filename);
     void unloadFile(const std::string &filename);
 
     void addFile(const std::string &filename);
